@@ -29,7 +29,7 @@ CREATE TABLE satisfaction_underline (
     satisfaction_score INT
 );
 
--- 插入数据
+
 INSERT INTO merchants_underline (merchant_id, merchant_name, industry)
 VALUES (1, '商家 A', '服装'),
        (2, '商家 B', '电子产品');
@@ -58,6 +58,7 @@ select * from satisfaction_underline;
 
 
 # process the data
+    
 with total_sales as(
     select 
     merchant_id,
