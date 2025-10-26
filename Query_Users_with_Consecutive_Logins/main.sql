@@ -45,7 +45,7 @@ WITH user_login AS (
         DATE(log_time) AS log_date
     FROM login_tb
     WHERE user_id IN (SELECT user_id FROM register_tb)
-    GROUP BY user_id, DATE(log_time)   -- 去重
+    GROUP BY user_id, DATE(log_time)   
 ),
 
 
