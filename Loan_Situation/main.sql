@@ -53,37 +53,26 @@ INSERT INTO loan_application_types (application_id, loan_type_id) VALUES
 
 -- process the data
 
-WITH t1 AS (
-    SELECT
-        c.city,
-        SUM(la.loan_amount) AS total_loan_amount,
-        round(SUM(la.loan_amount) / COUNT(DISTINCT la.customer_id), 2) AS average_loan_amount,
-        COUNT(DISTINCT la.customer_id) AS total_customers
-    FROM loan_applications AS la
-    LEFT JOIN customers AS c ON c.customer_id = la.customer_id
-    LEFT JOIN loan_application_types AS lat ON lat.application_id = la.application_id
-    LEFT JOIN loan_types AS lt ON lt.loan_type_id = lat.loan_type_id
-    GROUP BY c.city
-),
-t2 AS (
-    SELECT
-        c.city,
-        lt.loan_type_name,
-        COUNT(*) AS loan_type_count,
-        rank () OVER (PARTITION BY c.city ORDER BY COUNT(*) DESC) AS rn
-    FROM loan_applications AS la
-    LEFT JOIN customers AS c ON c.customer_id = la.customer_id
-    LEFT JOIN loan_application_types AS lat ON lat.application_id = la.application_id
-    LEFT JOIN loan_types AS lt ON lt.loan_type_id = lat.loan_type_id
-    GROUP BY c.city, lt.loan_type_name
-)
-SELECT
-    t1.city,
-    t1.total_loan_amount,
-    t1.average_loan_amount,
-    t1.total_customers,
-    t2.loan_type_name AS most_applied_loan_type
-FROM t1
-LEFT JOIN t2 ON t1.city = t2.city
-WHERE t2.rn = 1
-ORDER BY t1.city;
+select s1.city,s1.total_loan_amount,s1.average_loan_amount,s1.total_customers,
+s2.loan_type_name as most_applied_loan_type
+from (
+    select c.city,
+    round(sum(la.loan_amount),2) as total_loan_amount,
+    round(sum(la.loan_amount)/count(distinct c.customer_id),2) as average_loan_amount,
+    count(distinct c.customer_id) as total_customers
+    from loan_applications la
+    join customers c on c.customer_id = la.customer_id
+    join loan_application_types lat on lat.application_id = la.application_id
+    join loan_types lt on lat.loan_type_id = lt.loan_type_id
+    group by c.city
+)s1
+join (
+        select c.city,lt.loan_type_id,lt.loan_type_name,
+        rank() over(partition by c.city order by count(lat.loan_type_id) desc,lat.loan_type_id asc) as rk
+        from loan_applications la
+        join customers c on c.customer_id = la.customer_id
+        join loan_application_types lat on lat.application_id = la.application_id
+        join loan_types lt on lat.loan_type_id = lt.loan_type_id
+        group by c.city,lt.loan_type_id,lt.loan_type_name
+    )s2 on s2.city = s1.city
+where rk = 1
